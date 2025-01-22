@@ -1,22 +1,30 @@
 <script lang="ts">
-    import { CurrencyConverter } from "../functions/cc";
-  
-    
+    import { CurrencyConverter } from "../class/cc";
+    import { format } from "date-fns";
+    import { toZonedTime } from "date-fns-tz";
+
     const converter = new CurrencyConverter();
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   
     
     let amount: number = 1;
+    let amt2: number | null;
     let fromCurrency: string = 'USD';
     let toCurrency: string = 'EUR';
     let result: string | null = null; 
-    let currencies: {name: string; code: string}[] = converter.getCurrencies(); 
+    let currencies: {name: string; code: string}[] = converter.getCurrencies();
+    
+    let timestamp: string;
+    let zoneddate: Date; 
   
-
     async function handleConvert() {
       try {
+        amt2 = amount;
         const convertedAmount = converter.convert(amount, fromCurrency, toCurrency);
         const promiseRes = await convertedAmount;
         result = promiseRes.amount.toFixed(2);
+        timestamp = promiseRes.timestamp;
+        zoneddate = toZonedTime(timestamp, timezone);
       } catch (error) {
         console.error(error);
         result = 'Error: Invalid currency conversion';
@@ -24,7 +32,7 @@
     }
   </script>
   
-  <div class="p-6 max-w-lg mx-auto rounded-xl shadow-md space-y-6">
+  <div class="p-6 max-w-lg mx-auto rounded-xl shadow-md space-y-6 bg-white">
     <h1 class="text-2xl font-bold text-center text-gray-800">Currency Converter</h1>
   
     <div class="space-y-4">
@@ -38,6 +46,7 @@
           min="0"
           step="0.01"
           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          onchange="{amt2 = null}"
         />
       </div>
   
@@ -47,6 +56,7 @@
           id="fromCurrency"
           bind:value={fromCurrency}
           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          onchange="{result = null}"
         >
           {#each currencies as currency}
             <option value={currency.code}>{currency.code} - {currency.name}</option>
@@ -60,7 +70,8 @@
             id="toCurrency"
             bind:value={toCurrency}
             class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm max-h-60 overflow-y-auto"
-            >
+            onchange="{result = null}"
+        >
             {#each currencies as currency}
                 <option value={currency.code}>{currency.code} - {currency.name}</option>
             {/each}
@@ -70,15 +81,17 @@
     </div>
   
     <button
-      on:click={handleConvert}
+      onclick={handleConvert}
       class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
     >
       Convert
     </button>
 
-    {#if result !== null}
-      <div class="text-center text-lg font-medium text-gray-800">
-        {amount} {fromCurrency} = {result} {toCurrency}
+    {#if result !== null && amt2 !== null}
+      <div class="text-center text-base font-light text-gray-800">
+        {amt2} {fromCurrency} = {result} {toCurrency}
+        <br />
+        as of {format(timestamp, "yyyy-MM-dd HH:mm:ss a")}
       </div>
     {/if}
   </div>
